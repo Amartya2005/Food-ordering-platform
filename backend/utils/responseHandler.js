@@ -1,17 +1,11 @@
+const { createSuccessResponse, createErrorResponse } = require('./responseHelpers');
+
 const sendSuccess = (res, statusCode, message, data = null) => {
-  return res.status(statusCode).json({
-    success: true,
-    message,
-    data,
-  });
+  return res.status(statusCode).json(createSuccessResponse(message, data));
 };
 
-const sendError = (res, statusCode, message, errors = null) => {
-  return res.status(statusCode).json({
-    success: false,
-    message,
-    errors,
-  });
+const sendError = (res, statusCode, message, errors = undefined) => {
+  return res.status(statusCode).json(createErrorResponse(message, errors));
 };
 
 module.exports = {

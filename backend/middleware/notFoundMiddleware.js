@@ -1,7 +1,1 @@
-const notFoundMiddleware = (req, res, next) => {
-  const error = new Error(`Route not found: ${req.originalUrl}`);
-  error.statusCode = 404;
-  next(error);
-};
-
-module.exports = notFoundMiddleware;
+module.exports = require('./notFoundHandler');

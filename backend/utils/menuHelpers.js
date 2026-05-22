@@ -1,26 +1,20 @@
-const { getPocketBase } = require('../config/pocketbase');
-const { getPocketBaseFileUrl } = require('./fileHelpers');
-
-const sanitizeMenuItem = (menuItem, client = getPocketBase()) => {
-  if (!menuItem) {
-    return null;
-  }
+const sanitizeMenuItem = (menuItem) => {
+  if (!menuItem) return null;
 
   return {
     id: menuItem.id,
-    restaurantId: menuItem.restaurantId,
-    itemName: menuItem.itemName,
-    price: menuItem.price,
-    image: menuItem.image,
-    imageUrl: getPocketBaseFileUrl(client, menuItem, menuItem.image),
-    availability: menuItem.availability,
-    created: menuItem.created,
-    updated: menuItem.updated,
+    restaurantId: menuItem.restaurant_id,
+    itemName: menuItem.item_name,
+    price: Number(menuItem.price),
+    imageUrl: menuItem.image_url || null,
+    availability: Boolean(menuItem.availability),
+    created: menuItem.created_at,
+    updated: menuItem.updated_at,
   };
 };
 
-const sanitizeMenuItemList = (menuItems, client = getPocketBase()) => {
-  return menuItems.map((menuItem) => sanitizeMenuItem(menuItem, client));
+const sanitizeMenuItemList = (menuItems) => {
+  return menuItems.map(sanitizeMenuItem);
 };
 
 module.exports = {

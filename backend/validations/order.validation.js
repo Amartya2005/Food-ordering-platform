@@ -1,14 +1,14 @@
 const { ORDER_STATUSES, PAYMENT_STATUSES } = require('../config/collections');
+const { RECORD_ID_PATTERN } = require('../utils/validationHelpers');
 
-const pocketBaseRecordIdPattern = /^[a-z0-9]{15}$/i;
 const createBodyFields = ['restaurantId', 'items'];
 const statusBodyFields = ['status'];
 
-const validatePocketBaseId = (field, value) => {
-  if (!value || typeof value !== 'string' || !pocketBaseRecordIdPattern.test(value)) {
+const validateRecordId = (field, value) => {
+  if (!value || typeof value !== 'string' || !RECORD_ID_PATTERN.test(value)) {
     return {
       field,
-      message: `${field} must be a valid PocketBase record id.`,
+      message: `${field} must be a valid record id.`,
     };
   }
 
@@ -89,7 +89,7 @@ const validateOrderItems = (items) => {
       });
     });
 
-    const menuItemIdError = validatePocketBaseId(`${fieldPrefix}.menuItemId`, item.menuItemId);
+    const menuItemIdError = validateRecordId(`${fieldPrefix}.menuItemId`, item.menuItemId);
 
     if (menuItemIdError) {
       errors.push(menuItemIdError);
@@ -115,7 +115,7 @@ const validateOrderCreatePayload = (payload) => {
 
   const errors = [
     ...validateUnexpectedFields(payload, createBodyFields),
-    validatePocketBaseId('restaurantId', cleanPayload.restaurantId),
+    validateRecordId('restaurantId', cleanPayload.restaurantId),
     ...validateOrderItems(cleanPayload.items),
   ].filter(Boolean);
 
@@ -202,7 +202,7 @@ const validatePaymentStatus = (paymentStatus) => {
 };
 
 const validateOrderIdParam = (field, value) => {
-  const error = validatePocketBaseId(field, value);
+  const error = validateRecordId(field, value);
 
   return {
     valid: !error,

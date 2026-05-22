@@ -1,20 +1,5 @@
-const restaurantsService = require('../services/pocketbase/restaurants.service');
+const restaurantsService = require('../services/mysql/restaurants.service');
 const { sendSuccess } = require('../utils/responseHandler');
-const {
-  validateRestaurantCreatePayload,
-  validateRestaurantUpdatePayload,
-} = require('../validations/restaurant.validation');
-
-const throwValidationError = (validationResult) => {
-  if (validationResult.valid) {
-    return;
-  }
-
-  const error = new Error('Request validation failed.');
-  error.statusCode = 400;
-  error.details = validationResult.errors;
-  throw error;
-};
 
 const getRestaurants = async (req, res, next) => {
   try {
@@ -40,11 +25,8 @@ const getRestaurantById = async (req, res, next) => {
 
 const createRestaurant = async (req, res, next) => {
   try {
-    const validationResult = validateRestaurantCreatePayload(req.body, req.file);
-    throwValidationError(validationResult);
-
     const restaurant = await restaurantsService.createRestaurant(
-      validationResult.data,
+      req.body,
       req.file,
       req.user,
     );
@@ -59,12 +41,9 @@ const createRestaurant = async (req, res, next) => {
 
 const updateRestaurant = async (req, res, next) => {
   try {
-    const validationResult = validateRestaurantUpdatePayload(req.body, req.file);
-    throwValidationError(validationResult);
-
     const restaurant = await restaurantsService.updateRestaurant(
       req.params.id,
-      validationResult.data,
+      req.body,
       req.file,
     );
 

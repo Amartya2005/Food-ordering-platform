@@ -1,23 +1,17 @@
-const ordersService = require('../services/pocketbase/orders.service');
+const ordersService = require('../services/mysql/orders.service');
+const validateRequest = require('./validateRequest');
 const {
   validateOrderIdParam,
   validateOrderStatusPayload,
 } = require('../validations/order.validation');
 
-const throwValidationError = (validationResult) => {
-  if (validationResult.valid) {
-    return;
-  }
-
-  const error = new Error('Request validation failed.');
-  error.statusCode = 400;
-  error.details = validationResult.errors;
-  throw error;
-};
-
 const verifyOrderAccess = async (req, res, next) => {
   try {
-    throwValidationError(validateOrderIdParam('id', req.params.id));
+    const idValidation = validateOrderIdParam('id', req.params.id);
+
+    if (!idValidation.valid) {
+      throw validateRequest.buildValidationError(idValidation.errors);
+    }
 
     const order = await ordersService.verifyOrderAccess(req.params.id, req.user);
 
@@ -30,8 +24,16 @@ const verifyOrderAccess = async (req, res, next) => {
 
 const verifyOrderStatusManagement = async (req, res, next) => {
   try {
-    throwValidationError(validateOrderIdParam('id', req.params.id));
-    throwValidationError(validateOrderStatusPayload(req.body));
+    const idValidation = validateOrderIdParam('id', req.params.id);
+    const bodyValidation = validateOrderStatusPayload(req.body);
+
+    if (!idValidation.valid) {
+      throw validateRequest.buildValidationError(idValidation.errors);
+    }
+
+    if (!bodyValidation.valid) {
+      throw validateRequest.buildValidationError(bodyValidation.errors);
+    }
 
     const order = await ordersService.verifyOrderStatusManagement(req.params.id, req.user);
 
@@ -44,7 +46,11 @@ const verifyOrderStatusManagement = async (req, res, next) => {
 
 const verifyRestaurantOrderOwnership = async (req, res, next) => {
   try {
-    throwValidationError(validateOrderIdParam('restaurantId', req.params.restaurantId));
+    const validationResult = validateOrderIdParam('restaurantId', req.params.restaurantId);
+
+    if (!validationResult.valid) {
+      throw validateRequest.buildValidationError(validationResult.errors);
+    }
 
     const restaurant = await ordersService.verifyRestaurantOrderOwnership(
       req.params.restaurantId,

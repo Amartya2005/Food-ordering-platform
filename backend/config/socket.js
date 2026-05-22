@@ -1,9 +1,11 @@
 const { Server } = require('socket.io');
 const env = require('./env');
+const { corsOptions } = require('./cors');
 const verifyToken = require('../utils/verifyToken');
 const { USER_ROLES } = require('./collections');
-const restaurantsService = require('../services/pocketbase/restaurants.service');
+const restaurantsService = require('../services/mysql/restaurants.service');
 const { validateOrderIdParam } = require('../validations/order.validation');
+const logger = require('../utils/logger');
 const {
   SOCKET_EVENTS,
   SOCKET_ROOMS,
@@ -13,6 +15,10 @@ const {
 } = require('../utils/socketHelpers');
 
 let io = null;
+const socketMetrics = {
+  totalConnections: 0,
+  activeConnections: new Set(),
+};
 
 const authenticateSocket = (socket, next) => {
   try {
@@ -50,12 +56,69 @@ const emitSocketError = (socket, message, details = null) => {
   );
 };
 
+const initializeSocketRoomState = (socket) => {
+  socket.data.rooms = new Set();
+  socket.data.connectedAt = Date.now();
+};
+
+const trackRoomJoin = (socket, room) => {
+  if (socket.data.rooms.has(room)) {
+    return false;
+  }
+
+  socket.join(room);
+  socket.data.rooms.add(room);
+  return true;
+};
+
+const trackRoomLeave = (socket, room) => {
+  if (!socket.data.rooms.has(room)) {
+    return false;
+  }
+
+  socket.leave(room);
+  socket.data.rooms.delete(room);
+  return true;
+};
+
+const cleanupSocketRooms = (socket) => {
+  if (!socket.data.rooms) {
+    return;
+  }
+
+  socket.data.rooms.forEach((room) => {
+    socket.leave(room);
+  });
+
+  socket.data.rooms.clear();
+};
+
+const trackSocketConnection = (socket) => {
+  socketMetrics.activeConnections.add(socket.id);
+  socketMetrics.totalConnections += 1;
+
+  logger.debug('Socket connected.', {
+    socketId: socket.id,
+    totalConnections: socketMetrics.totalConnections,
+    activeConnections: socketMetrics.activeConnections.size,
+  });
+};
+
+const trackSocketDisconnection = (socket) => {
+  socketMetrics.activeConnections.delete(socket.id);
+
+  logger.debug('Socket disconnected.', {
+    socketId: socket.id,
+    activeConnections: socketMetrics.activeConnections.size,
+  });
+};
+
 const joinCustomerRoom = (socket) => {
   const { user } = socket.data;
 
   if (user.role === USER_ROLES.customer || user.role === USER_ROLES.admin) {
     const room = SOCKET_ROOMS.customer(user.id);
-    socket.join(room);
+    trackRoomJoin(socket, room);
     return room;
   }
 
@@ -75,7 +138,7 @@ const handleRestaurantJoin = async (socket, payload = {}) => {
     await restaurantsService.verifyRestaurantOwnership(restaurantId, socket.data.user);
 
     const room = SOCKET_ROOMS.restaurant(restaurantId);
-    socket.join(room);
+    trackRoomJoin(socket, room);
 
     socket.emit(
       SOCKET_EVENTS.restaurantJoin,
@@ -99,7 +162,7 @@ const handleRestaurantLeave = (socket, payload = {}) => {
   }
 
   const room = SOCKET_ROOMS.restaurant(restaurantId);
-  socket.leave(room);
+  trackRoomLeave(socket, room);
 
   socket.emit(
     SOCKET_EVENTS.restaurantLeave,
@@ -113,15 +176,25 @@ const handleRestaurantLeave = (socket, payload = {}) => {
 const initializeSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: env.clientUrl,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      credentials: true,
+      origin: corsOptions.origin,
+      methods: corsOptions.methods,
+      credentials: corsOptions.credentials,
+      allowedHeaders: corsOptions.allowedHeaders,
     },
+    transports: ['websocket', 'polling'],
+    connectTimeout: 10000,
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 5,
   });
 
   io.use(authenticateSocket);
 
   io.on('connection', (socket) => {
+    initializeSocketRoomState(socket);
+    trackSocketConnection(socket);
+
     const customerRoom = joinCustomerRoom(socket);
 
     socket.emit(
@@ -145,18 +218,12 @@ const initializeSocket = (httpServer) => {
       emitSocketError(socket, error.message || 'Socket error.');
     });
 
-    socket.on('disconnecting', (reason) => {
-      socket.emit(
-        SOCKET_EVENTS.socketDisconnected,
-        buildSocketPayload(SOCKET_EVENTS.socketDisconnected, {
-          socketId: socket.id,
-          reason,
-        }),
-      );
+    socket.on('disconnecting', () => {
+      cleanupSocketRooms(socket);
     });
 
     socket.on('disconnect', (reason) => {
-      console.log(`Socket disconnected: ${socket.id}. Reason: ${reason}`);
+      trackSocketDisconnection(socket);
     });
   });
 
@@ -171,7 +238,15 @@ const getSocket = () => {
   return io;
 };
 
+const getSocketMetrics = () => {
+  return {
+    totalConnections: socketMetrics.totalConnections,
+    activeConnections: socketMetrics.activeConnections.size,
+  };
+};
+
 module.exports = {
   initializeSocket,
   getSocket,
+  getSocketMetrics,
 };

@@ -1,25 +1,8 @@
-const authService = require('../services/pocketbase/auth.service');
+const authService = require('../services/mysql/auth.service');
 const { sendSuccess } = require('../utils/responseHandler');
-const {
-  validateRegisterPayload,
-  validateLoginPayload,
-} = require('../validations/auth.validation');
-
-const throwValidationError = (validationResult) => {
-  if (validationResult.valid) {
-    return;
-  }
-
-  const error = new Error('Request validation failed.');
-  error.statusCode = 400;
-  error.details = validationResult.errors;
-  throw error;
-};
 
 const register = async (req, res, next) => {
   try {
-    throwValidationError(validateRegisterPayload(req.body));
-
     const result = await authService.register(req.body);
 
     return sendSuccess(res, 201, 'User registered successfully.', result);
@@ -30,8 +13,6 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    throwValidationError(validateLoginPayload(req.body));
-
     const result = await authService.login(req.body);
 
     return sendSuccess(res, 200, 'Login successful.', result);

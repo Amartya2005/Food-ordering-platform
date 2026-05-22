@@ -6,9 +6,7 @@ const normalizeEmail = (email) => {
 };
 
 const sanitizeUser = (user) => {
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return {
     id: user.id,
@@ -16,23 +14,16 @@ const sanitizeUser = (user) => {
     email: user.email,
     role: user.role,
     address: user.address,
-    verified: user.verified,
-    created: user.created,
-    updated: user.updated,
+    verified: Boolean(user.verified),
+    created: user.created_at || user.created,
+    updated: user.updated_at || user.updated,
   };
 };
 
 const extractBearerToken = (authorizationHeader) => {
-  if (!authorizationHeader || typeof authorizationHeader !== 'string') {
-    return null;
-  }
-
+  if (!authorizationHeader || typeof authorizationHeader !== 'string') return null;
   const [scheme, token] = authorizationHeader.split(' ');
-
-  if (scheme !== 'Bearer' || !token) {
-    return null;
-  }
-
+  if (scheme !== 'Bearer' || !token) return null;
   return token;
 };
 

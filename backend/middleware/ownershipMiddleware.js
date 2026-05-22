@@ -1,4 +1,4 @@
-const restaurantsService = require('../services/pocketbase/restaurants.service');
+const restaurantsService = require('../services/mysql/restaurants.service');
 
 const verifyRestaurantOwnership = async (req, res, next) => {
   try {

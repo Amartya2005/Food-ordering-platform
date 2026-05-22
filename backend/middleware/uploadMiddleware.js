@@ -1,11 +1,24 @@
+const path = require('path');
 const multer = require('multer');
 const { IMAGE_FIELD_OPTIONS } = require('../config/collections');
 const {
   isSupportedImageMimeType,
   isSupportedImageExtension,
 } = require('../utils/fileHelpers');
+const { ensureUploadsDir, UPLOADS_DIR } = require('../utils/uploadHelpers');
 
-const storage = multer.memoryStorage();
+ensureUploadsDir();
+
+const storage = multer.diskStorage({
+  destination: (req, file, callback) => {
+    callback(null, UPLOADS_DIR);
+  },
+  filename: (req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
+    callback(null, uniqueName);
+  },
+});
 
 const imageFileFilter = (req, file, callback) => {
   if (!isSupportedImageMimeType(file.mimetype) || !isSupportedImageExtension(file.originalname)) {

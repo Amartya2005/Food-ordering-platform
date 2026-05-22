@@ -21,64 +21,30 @@ const validateImageUpload = (file, options = {}) => {
 
   if (!file) {
     if (required) {
-      errors.push({
-        field,
-        message: `${field} is required.`,
-      });
+      errors.push({ field, message: `${field} is required.` });
     }
 
     return errors;
   }
 
   if (!isSupportedImageMimeType(file.mimetype)) {
-    errors.push({
-      field,
-      message: `${field} must be a jpg, jpeg, png, or webp image.`,
-    });
+    errors.push({ field, message: `${field} must be a jpg, jpeg, png, or webp image.` });
   }
 
   if (!isSupportedImageExtension(file.originalname)) {
-    errors.push({
-      field,
-      message: `${field} must use a .jpg, .jpeg, .png, or .webp extension.`,
-    });
+    errors.push({ field, message: `${field} must use a .jpg, .jpeg, .png, or .webp extension.` });
   }
 
   if (file.size > IMAGE_FIELD_OPTIONS.maxSize) {
-    errors.push({
-      field,
-      message: `${field} must be smaller than ${IMAGE_FIELD_OPTIONS.maxSize} bytes.`,
-    });
+    errors.push({ field, message: `${field} must be smaller than ${IMAGE_FIELD_OPTIONS.maxSize} bytes.` });
   }
 
   return errors;
 };
 
-const appendFileToFormData = (formData, fieldName, file) => {
-  if (!file) {
-    return;
-  }
-
-  const uploadFile = new File([file.buffer], file.originalname, {
-    type: file.mimetype,
-  });
-
-  formData.append(fieldName, uploadFile);
-};
-
-const getPocketBaseFileUrl = (client, record, filename, options = {}) => {
-  if (!filename) {
-    return null;
-  }
-
-  return client.files.getURL(record, filename, options);
-};
-
 module.exports = {
   ALLOWED_IMAGE_EXTENSIONS,
   validateImageUpload,
-  appendFileToFormData,
-  getPocketBaseFileUrl,
   isSupportedImageMimeType,
   isSupportedImageExtension,
 };

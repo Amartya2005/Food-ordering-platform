@@ -4,6 +4,7 @@ const {
   SOCKET_ROOMS,
   buildSocketPayload,
 } = require('../../utils/socketHelpers');
+const logger = require('../../utils/logger');
 
 const emitToRoom = (room, event, data) => {
   try {
@@ -12,7 +13,9 @@ const emitToRoom = (room, event, data) => {
     return true;
   } catch (error) {
     if (error.message !== 'Socket.io has not been initialized.') {
-      console.warn(`Realtime emit failed for ${event}: ${error.message}`);
+      logger.warn(`Realtime emit failed for ${event}.`, {
+        message: error.message,
+      });
     }
 
     return false;

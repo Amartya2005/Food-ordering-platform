@@ -1,29 +1,9 @@
-const ordersService = require('../services/pocketbase/orders.service');
+const ordersService = require('../services/mysql/orders.service');
 const { sendSuccess } = require('../utils/responseHandler');
-const {
-  validateOrderCreatePayload,
-  validateOrderStatusPayload,
-  validateOrderStatusFilter,
-  validateOrderIdParam,
-} = require('../validations/order.validation');
-
-const throwValidationError = (validationResult) => {
-  if (validationResult.valid) {
-    return;
-  }
-
-  const error = new Error('Request validation failed.');
-  error.statusCode = 400;
-  error.details = validationResult.errors;
-  throw error;
-};
 
 const createOrder = async (req, res, next) => {
   try {
-    const validationResult = validateOrderCreatePayload(req.body);
-    throwValidationError(validationResult);
-
-    const order = await ordersService.createOrder(validationResult.data, req.user);
+    const order = await ordersService.createOrder(req.body, req.user);
 
     return sendSuccess(res, 201, 'Order placed successfully.', {
       order,
@@ -57,9 +37,6 @@ const getOrderById = async (req, res, next) => {
 
 const getRestaurantOrders = async (req, res, next) => {
   try {
-    throwValidationError(validateOrderIdParam('restaurantId', req.params.restaurantId));
-    throwValidationError(validateOrderStatusFilter(req.query.status));
-
     const result = await ordersService.getRestaurantOrders(
       req.params.restaurantId,
       req.user,
@@ -74,10 +51,7 @@ const getRestaurantOrders = async (req, res, next) => {
 
 const updateOrderStatus = async (req, res, next) => {
   try {
-    const validationResult = validateOrderStatusPayload(req.body);
-    throwValidationError(validationResult);
-
-    const order = await ordersService.updateOrderStatus(req.params.id, validationResult.data.status);
+    const order = await ordersService.updateOrderStatus(req.params.id, req.body.status);
 
     return sendSuccess(res, 200, 'Order status updated successfully.', {
       order,

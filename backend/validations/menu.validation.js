@@ -1,7 +1,6 @@
 const { validatePayload } = require('../utils/collectionValidator');
 const { validateImageUpload } = require('../utils/fileHelpers');
-
-const pocketBaseRecordIdPattern = /^[a-z0-9]{15}$/i;
+const { RECORD_ID_PATTERN } = require('../utils/validationHelpers');
 const createBodyFields = ['restaurantId', 'itemName', 'price', 'availability'];
 const updateBodyFields = ['itemName', 'price', 'availability'];
 
@@ -10,8 +9,8 @@ const menuValidationSchema = {
   fields: {
     restaurantId: {
       type: 'string',
-      pattern: pocketBaseRecordIdPattern,
-      patternMessage: 'restaurantId must be a valid PocketBase record id.',
+      pattern: RECORD_ID_PATTERN,
+      patternMessage: 'restaurantId must be a valid record id.',
     },
     itemName: {
       type: 'string',
@@ -150,14 +149,14 @@ const validateMenuItemUpdatePayload = (payload, file) => {
   };
 };
 
-const validatePocketBaseId = (field, value) => {
-  if (!value || !pocketBaseRecordIdPattern.test(value)) {
+const validateRecordId = (field, value) => {
+  if (!value || !RECORD_ID_PATTERN.test(value)) {
     return {
       valid: false,
       errors: [
         {
           field,
-          message: `${field} must be a valid PocketBase record id.`,
+          message: `${field} must be a valid record id.`,
         },
       ],
     };
@@ -173,5 +172,5 @@ module.exports = {
   menuValidationSchema,
   validateMenuItemCreatePayload,
   validateMenuItemUpdatePayload,
-  validatePocketBaseId,
+  validateRecordId,
 };

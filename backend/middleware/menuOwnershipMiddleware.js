@@ -1,15 +1,13 @@
-const menuService = require('../services/pocketbase/menu.service');
-const { validatePocketBaseId } = require('../validations/menu.validation');
+const menuService = require('../services/mysql/menu.service');
+const validateRequest = require('./validateRequest');
+const { validateRecordId } = require('../validations/menu.validation');
 
 const verifyMenuOwnership = async (req, res, next) => {
   try {
-    const validationResult = validatePocketBaseId('id', req.params.id);
+    const validationResult = validateRecordId('id', req.params.id);
 
     if (!validationResult.valid) {
-      const error = new Error('Request validation failed.');
-      error.statusCode = 400;
-      error.details = validationResult.errors;
-      throw error;
+      throw validateRequest.buildValidationError(validationResult.errors);
     }
 
     const menuItem = await menuService.verifyMenuOwnership(req.params.id, req.user);

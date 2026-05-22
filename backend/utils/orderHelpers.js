@@ -1,18 +1,16 @@
 const sanitizeOrder = (order) => {
-  if (!order) {
-    return null;
-  }
+  if (!order) return null;
 
   return {
     id: order.id,
-    customerId: order.customerId,
-    restaurantId: order.restaurantId,
-    items: order.items,
-    totalPrice: order.totalPrice,
+    customerId: order.customer_id || order.customerId,
+    restaurantId: order.restaurant_id || order.restaurantId,
+    items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
+    totalPrice: Number(order.total_price || order.totalPrice),
     status: order.status,
-    paymentStatus: order.paymentStatus,
-    created: order.created,
-    updated: order.updated,
+    paymentStatus: order.payment_status || order.paymentStatus,
+    created: order.created_at || order.created,
+    updated: order.updated_at || order.updated,
   };
 };
 
